@@ -29,7 +29,9 @@ int main(int argc, char *argv[])
 
 
 
-
+    // printf("char *n: %c\n", *n);
+    printf("int *inpad %d\n", inpad);
+    printf("int *outpad %d\n", outpad);
 
     // open input file
     FILE *inptr = fopen(infile, "r");
@@ -51,7 +53,7 @@ int main(int argc, char *argv[])
     // read infile's BITMAPFILEHEADER
     BITMAPFILEHEADER bf;
     fread(&bf, sizeof(BITMAPFILEHEADER), 1, inptr);
-        // printf("sizeof(BITMAPFILEHEADER) %lu\n", sizeof(BITMAPFILEHEADER));
+        printf("sizeof(BITMAPFILEHEADER) %lu\n", sizeof(BITMAPFILEHEADER));
         // printf("")
 
     // read infile's BITMAPINFOHEADER
@@ -72,23 +74,10 @@ int main(int argc, char *argv[])
 
     bi.biWidth *= n;
     bi.biHeight *= n;
-    bi.biSizeImage *= n;
-    bf.bfSize *= n;
 
     printf("bi.biWidth value is: %i\n", bi.biWidth);
     printf("bi.biHeight value is: %i\n", bi.biHeight);
-    printf("bi.biSizeImage value is: %i\n", bi.biSizeImage);
-    printf("bf.bfSize value is: %i\n", bf.bfSize);
 
-    outpad =  (4 - (bi.biWidth * n * sizeof(RGBTRIPLE)) % 4) % 4;
-    inpad =  (4 - (bi.biWidth * sizeof(RGBTRIPLE)) % 4) % 4;
-
-
-        // printf("char *n: %c\n", *n);
-    printf("int inpad %d\n", inpad);
-    printf("int outpad %d\n", outpad);
-
-    // delete this later
     typedef struct tagBITMAPINFOHEADER {
         DWORD biSize;
         LONG  biWidth;
@@ -104,6 +93,7 @@ int main(int argc, char *argv[])
     } BITMAPINFOHEADER;
 
 
+    // printf("tagBITMAPINFOHEADER : %lu\n",  biWidth);
 
     // size_t fread(void* ptr, size_t size, size_t blocks, FILE* fp);
 
@@ -112,13 +102,8 @@ int main(int argc, char *argv[])
     // write outfile's BITMAPFILEHEADER
     fwrite(&bf, sizeof(BITMAPFILEHEADER), 1, outptr);
 
-
-
     // write outfile's BITMAPINFOHEADER
     fwrite(&bi, sizeof(BITMAPINFOHEADER), 1, outptr);
-
-    // edit here to account for outfile's BITMAPINFOHEADERs resize
-
 
 
 
@@ -135,6 +120,8 @@ int main(int argc, char *argv[])
     //     padding2 =  (4 - (bi.biWidth * sizeof(RGBTRIPLE)) % 4) % 4;
     // }
 
+
+    // printf("padding and padding2 %i %i\n", padding, padding2);
 
 
     // determine padding for scanlines
@@ -166,7 +153,7 @@ int main(int argc, char *argv[])
         // then add it back (to demonstrate how)
         for (int k = 0; k < padding; k++)
         {
-            //adding padding back into the image
+            // k is the changed padding, shows as k: 0  or k: 1 for *n = 2 on 3x3.bmp
             fputc(0x00, outptr);
             printf("k: %i\n", k);
         }
@@ -183,3 +170,17 @@ int main(int argc, char *argv[])
 }
 
 
+
+
+    // int main(int argc, char* argv[])
+    // {
+    //     int padding2;
+    //     int padding;
+    //     // ensure proper usage if (argc != 4) { printf("Usage: ./resize n infile outfile\n"); return 1; }
+
+    //     int n = atoi(argv[1]);
+    //     if(n < 1 || n > 100)
+    //     {
+    //         printf("n should be between 1 and 100\n");
+    //         return 1;
+    //     }

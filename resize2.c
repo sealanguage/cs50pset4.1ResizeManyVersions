@@ -15,6 +15,7 @@ int main(int argc, char *argv[])
     }
 
     // remember filenames
+    // store number as number not char
     int n = atoi(argv[1]);
         if(n < 1 || n > 100)
         {
@@ -24,11 +25,9 @@ int main(int argc, char *argv[])
     char *infile = argv[2];
     char *outfile = argv[3];
 
+    // setup variables for padding of the infile and padding of the outfile
     int inpad = 0;
     int outpad = 0;
-
-
-
 
 
     // open input file
@@ -72,36 +71,31 @@ int main(int argc, char *argv[])
 
     bi.biWidth *= n;
     bi.biHeight *= n;
-    bi.biSizeImage *= n;
-    bf.bfSize *= n;
+    bi.biSizeImage = bi.biWidth * bi.biHeight *3;
+
 
     printf("bi.biWidth value is: %i\n", bi.biWidth);
     printf("bi.biHeight value is: %i\n", bi.biHeight);
     printf("bi.biSizeImage value is: %i\n", bi.biSizeImage);
-    printf("bf.bfSize value is: %i\n", bf.bfSize);
 
-    outpad =  (4 - (bi.biWidth * n * sizeof(RGBTRIPLE)) % 4) % 4;
-    inpad =  (4 - (bi.biWidth * sizeof(RGBTRIPLE)) % 4) % 4;
+    // this should be reading the infile bfSize
+    printf("bf.bfSize infile value is: %i\n", bf.bfSize);
 
 
-        // printf("char *n: %c\n", *n);
-    printf("int inpad %d\n", inpad);
-    printf("int outpad %d\n", outpad);
+    // bf.Size outfile value is total size of file in bytes including pixels, padding and headers
+    bf.bfSize = bi.biSizeImage + sizeof(BITMAPFILEHEADER) + sizeof(BITMAPINFOHEADER) + padding;
 
-    // delete this later
-    typedef struct tagBITMAPINFOHEADER {
-        DWORD biSize;
-        LONG  biWidth;
-        LONG  biHeight;
-        WORD  biPlanes;
-        WORD  biBitCount;
-        DWORD biCompression;
-        DWORD biSizeImage;
-        LONG  biXPelsPerMeter;
-        LONG  biYPelsPerMeter;
-        DWORD biClrUsed;
-        DWORD biClrImportant;
-    } BITMAPINFOHEADER;
+
+
+    typedef struct
+    {
+        WORD bfType;
+        DWORD bfSize;
+        WORD bfReserved1;
+        WORD bfReserved2;
+        DWORD bfOffBits;
+    } __attribute__((__packed__))
+    BITMAPFILEHEADER;
 
 
 
@@ -140,6 +134,8 @@ int main(int argc, char *argv[])
     // determine padding for scanlines
     int padding = (4 - (bi.biWidth * sizeof(RGBTRIPLE)) % 4) % 4;
 
+    bf.bfSize = bi.biSizeImage + sizeof(BITMAPFILEHEADER) + sizeof(BITMAPINFOHEADER) + padding;
+
     // iterate over infile's scanlines
     for (int i = 0, biHeight = abs(bi.biHeight); i < biHeight; i++)
     {
@@ -155,16 +151,32 @@ int main(int argc, char *argv[])
             // write RGB triple to outfile
             fwrite(&triple, sizeof(RGBTRIPLE), 1, outptr);
 
-            // prints padding value and buHeight value of outgoing (?) file
-            // printf("biHeight: %i\n", biHeight);
-            // printf("padding: %i\n", padding);
         }
 
         // skip over padding, if any
         fseek(inptr, padding, SEEK_CUR);
 
+
+        outpad =  (4 - (bi.biWidth * n * sizeof(RGBTRIPLE)) % 4) % 4;
+        inpad =  (4 - (bi.biWidth * sizeof(RGBTRIPLE)) % 4) % 4;
+        int paddingtest =  (4 - (bi.biWidth * 100 * sizeof(RGBTRIPLE)) % 4) % 4;
+
+        int bisizeimagetest = bi.biWidth * bi.biHeight *3;
+        int bfsizetest = bisizeimagetest + sizeof(BITMAPFILEHEADER) + sizeof(BITMAPINFOHEADER);
+
+
+
+            // printf("char *n: %c\n", *n);
+        printf("int outpad %d\n", inpad);
+        printf("int inpad %d\n", outpad);
+        printf("int paddingtest %d\n", paddingtest);
+        printf("int bisizeimagetest %d\n", bisizeimagetest);
+        printf("int bfsizetest %d\n", bfsizetest);
+        printf("int bf.bfSize %d\n", bf.bfSize);
+
+
         // then add it back (to demonstrate how)
-        for (int k = 0; k < padding; k++)
+        for (int k = 0; k < outpad; k++)
         {
             //adding padding back into the image
             fputc(0x00, outptr);
@@ -183,3 +195,21 @@ int main(int argc, char *argv[])
 }
 
 
+
+
+
+// a way of adjusting for padding
+
+
+// for (int a = 0; a < height; a++) {
+//     for (int b = 0; b < width*3; b++) {
+//         if (bmpArray[a*(width*3 + padding)+b] < 127) {
+//             bmpArray[a*(width*3 + padding)+b] = 0;
+//         } else {
+//             bmpArray[a*(width*3 + padding)+b] = 255;
+//         }
+//     }
+//     for (int pad = 0; pad < padding; pad++) {
+//         bmpArray[a*(width*3 + padding) + 3*width + pad] = 0x00;
+//     }
+// }

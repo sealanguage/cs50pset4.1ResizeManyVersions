@@ -51,21 +51,20 @@ int main(int argc, char *argv[])
     // read infile's BITMAPFILEHEADER
     BITMAPFILEHEADER bf;
     fread(&bf, sizeof(BITMAPFILEHEADER), 1, inptr);
-        // printf("sizeof(BITMAPFILEHEADER) %lu\n", sizeof(BITMAPFILEHEADER));
-        // printf("")
+
 
     // read infile's BITMAPINFOHEADER
     BITMAPINFOHEADER bi;
     fread(&bi, sizeof(BITMAPINFOHEADER), 1, inptr);
-
-    // print to show size of FILE header and info header, 14 and 40 always
-    // printf("infile BITMAPFILEHEADER: %lu\n", sizeof(BITMAPFILEHEADER));
-    // printf("infile BITMAPINFOHEADER: %lu\n", sizeof(BITMAPINFOHEADER));
-
-    inpad = (bi.biWidth * sizeof(RGBTRIPLE)) % 4;  // make sure this refers to the old width
+    int origbiHeight = bi.biHeight;
+    printf("origbiHeight is %i\n", origbiHeight);
+    int infilebiHeight = abs(bi.biHeight);
+    printf("infile absbiHeight is %i\n", infilebiHeight);
+    int infilebiWidth = bi.biWidth;
+    printf("infilebiWidth value is %i\n", infilebiWidth);
     printf("bi.biwidth used for infile padding %i\n", bi.biWidth);
+    inpad = (bi.biWidth * sizeof(RGBTRIPLE)) % 4;  // make sure this refers to the old width
     printf("infile padding %d\n", inpad);
-
 
 
     // ensure infile is (likely) a 24-bit uncompressed BMP 4.0
@@ -81,18 +80,14 @@ int main(int argc, char *argv[])
     // print width and height of the OUTFILE
     bi.biWidth *= n;
     bi.biHeight *= n;
+    // abs(biHeight) = bi.biHeight;
     // check50 does not pass third test, doesn't resize small.bmp when n is 1 when I change this line
     // bi.biSizeImage = bi.biWidth * bi.biHeight *3;
     // bf.bfSize *= n;
 
 
     printf("bi.biWidth value is: %i\n", bi.biWidth);
-    printf("bi.biHeight value is: %i\n", bi.biHeight);
-
-
-    // this should be reading the infile bfSize
-    // printf("bf.bfSize infile value is: %i\n", bf.bfSize);
-
+    printf("abs bi.biHeight value is: %i\n", abs(bi.biHeight));
 
     // size_t fread(void* ptr, size_t size, size_t blocks, FILE* fp);
 
@@ -105,86 +100,76 @@ int main(int argc, char *argv[])
     fwrite(&bi, sizeof(BITMAPINFOHEADER), 1, outptr);    // this should be 40
 
     // edit here to account for outfile's BITMAPINFOHEADERs resize
-
-
-    // if(bi.biSizeImage == (bi.biWidth * bi.biHeight *3))
-    // {
-    //     // no padding needed
-    //     int padding = 0;
-    //     int padding2 = 0;
-    // }
-    // else
-    // {
-    //     // determine padding for scanlines
-    //     padding =  (4 - (bi.biWidth * n * sizeof(RGBTRIPLE)) % 4) % 4;
-    //     padding2 =  (4 - (bi.biWidth * sizeof(RGBTRIPLE)) % 4) % 4;
-    // }
-
-
-
-    // determine padding for scanlines
-    // padding = (4 - (bi.biWidth * sizeof(RGBTRIPLE)) % 4) % 4;  // code from copy.c no resize here
-
-    // change this to make outpad value
-    // padding = (4 - (bi.biWidth * n * sizeof(RGBTRIPLE)) % 4) % 4;
-
     padding =  (4 - (bi.biWidth * sizeof(RGBTRIPLE)) % 4) % 4;
     printf("int padding %d\n", padding);
 
-
-    // inpad =  (4 - (bi.biWidth * sizeof(RGBTRIPLE)) % 4) % 4;  // make sure this refers to the old width
-
-
-    // int paddingtest =  (4 - (bi.biWidth * sizeof(RGBTRIPLE)) % 4) % 4;
-    // int bisizeimagetest = bi.biWidth * bi.biHeight *3;
-    // int bfsizetest = bisizeimagetest + sizeof(BITMAPFILEHEADER) + sizeof(BITMAPINFOHEADER);
-
-
     bi.biSizeImage = ((sizeof(RGBTRIPLE) * bi.biWidth) + padding) * abs(bi.biHeight);
     printf("RGBTRIPLE size is: %lu\n", sizeof(RGBTRIPLE));
-
-    // bf.Size outfile value is total size of file in bytes including pixels, padding and headers
-    // bf.bfSize = bi.biSizeImage + sizeof(BITMAPFILEHEADER) + sizeof(BITMAPINFOHEADER) + padding;
-    // bf.bfSize = bi.biSizeImage + sizeof(BITMAPFILEHEADER) + sizeof(BITMAPINFOHEADER);
-
     printf("bi.biSizeImage value is: %i\n", bi.biSizeImage);
 
+
+
     // iterate over infile's scanlines
-    for (int i = 0, biHeight = abs(bi.biHeight); i < biHeight; i++)
+    // this should iterate over rows
+    // for origbiHeight
+    for (int i = 0; i < origbiHeight; i++)
     {
-        // iterate over pixels in scanline
-        for (int j = 0; j < bi.biWidth; j++)
+        // for the resize number n
+        for(int m = 0; m < 2; m++)
         {
-            // temporary storage
-            RGBTRIPLE triple;
+            printf("origbiHeight for loop is %i\n", origbiHeight);
+            printf("loop int i is %i\n", i);
+            // for original width
+            // iterate over pixels in scanline
+            for (int j = 0; j < bi.biWidth; j++)
+            {
+                printf("bi.biWidth value for loop is %i\n", bi.biWidth);
+                // read rgb triple
+                // temporary storage
 
-            // read RGB triple from infile
-            fread(&triple, sizeof(RGBTRIPLE), 1, inptr);
+                    RGBTRIPLE triple;
 
-            // write RGB triple to outfile
-            fwrite(&triple, sizeof(RGBTRIPLE), 1, outptr);
+                    // read RGB triple from infile
+                    fread(&triple, sizeof(RGBTRIPLE), 1, inptr);
 
+                    // write rgbtriple n number of times
+                    for(int h = 0; h < 4; h++)
+                        {
+
+                            printf("h value is %i\n", h);
+                            // write RGB triple to outfile
+                            fwrite(&triple, sizeof(RGBTRIPLE), 1, outptr);
+                        }
+
+
+                }
+            }
+            // skip over padding, if any
+            fseek(inptr, padding, SEEK_CUR);
+
+
+            // printf("char *n: %c\n", *n);
+
+            // printf("int paddingtest %i\n", paddingtest);
+            // printf("int bisizeimagetest %d\n", bisizeimagetest);
+            // printf("int bfsizetest %d\n", bfsizetest);
+            printf("int bf.bfSize %d\n", bf.bfSize);
+
+            //  add new padding for outfile
+            // move cursor to beginning of scanline
+            // write function to move cursor back using
+
+            // then add it back (to demonstrate how)
+            for (int k = 0; k < padding; k++)
+            {
+                //adding padding back into the image
+                fputc(0x00, outptr);
+                printf("k: %i\n", k);
+            }
         }
 
-        // skip over padding, if any
-        fseek(inptr, padding, SEEK_CUR);
+        // move cursor forward to next scanline using SEEK_XXX
 
-
-        // printf("char *n: %c\n", *n);
-
-        // printf("int paddingtest %i\n", paddingtest);
-        // printf("int bisizeimagetest %d\n", bisizeimagetest);
-        // printf("int bfsizetest %d\n", bfsizetest);
-        printf("int bf.bfSize %d\n", bf.bfSize);
-
-
-        // then add it back (to demonstrate how)
-        for (int k = 0; k < padding; k++)
-        {
-            //adding padding back into the image
-            fputc(0x00, outptr);
-            printf("k: %i\n", k);
-        }
     }
 
     // close infile
@@ -199,6 +184,32 @@ int main(int argc, char *argv[])
 
 
 
+
+// pseudocode for scanlines 1
+
+// for each row
+//     for each pixel
+//         write to array n times
+//         for n times
+//         write array to outfile
+//         write outfile padding
+//         skip over infile padding
+//     repeat for next row
+
+
+
+// pseudocode for scanlines 2
+
+// for OriginalHeight
+
+// 	for resize factor
+// 		for OriginalWidth
+// 			read triple
+// 			write n copies of triple
+// 		skip over original padding
+// 		add new padding to new bmp
+// 		move cursor to begining of scanline (using sendback)\
+// 	move cursor FORWARD to next scanline
 
 
 // a way of adjusting for padding
@@ -216,3 +227,6 @@ int main(int argc, char *argv[])
 //         bmpArray[a*(width*3 + padding) + 3*width + pad] = 0x00;
 //     }
 // }
+
+
+

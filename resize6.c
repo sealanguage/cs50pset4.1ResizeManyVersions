@@ -1,4 +1,3 @@
-// Copies a BMP file
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -25,7 +24,7 @@ int main(int argc, char *argv[])
     char *outfile = argv[3];
 
     // setup variables for padding of the infile and padding of the outfile
-    int inpad;
+    int inpad = 0;
     int padding = 0;
 
 
@@ -58,17 +57,11 @@ int main(int argc, char *argv[])
     int inbiHeight = abs(bi.biHeight);
 
     // determine padding for scanlines
-    // inpad = 4 - (bi.biWidth * sizeof(RGBTRIPLE)) % 4;  // code from copy.c no resize here
-    // inpad =  (4 - (bi.biWidth * sizeof(RGBTRIPLE)) % 4) % 4;  // make sure this refers to the old width
     inpad =  bi.biWidth * sizeof(RGBTRIPLE) % 4;  // make sure this refers to the old width
-    // change this to make outpad value
-
     printf("infile padding inpad is  %d\n", inpad);
 
 
-
     int inbiWidth = bi.biWidth;
-
     printf("inbiWidth used for infile padding %i\n", inbiWidth);
     printf("inbiHeight used for infile padding %i\n", inbiHeight);
 
@@ -82,9 +75,6 @@ int main(int argc, char *argv[])
         return 4;
     }
 
-
-
-
     // structs for new bitmapfileheader
     BITMAPFILEHEADER OUTbf = bf;
     BITMAPINFOHEADER OUTbi = bi;
@@ -92,11 +82,7 @@ int main(int argc, char *argv[])
     // print width and height of the OUTFILE
     OUTbi.biWidth *= n;
     OUTbi.biHeight *= n;
-     padding =  (4 - (OUTbi.biWidth * sizeof(RGBTRIPLE)) % 4) % 4;
-    // padding =  4 - (bi.biWidth * sizeof(RGBTRIPLE)) % 4;
-    // padding =  (4 - (bi.biWidth * sizeof(RGBTRIPLE)) % 4) % 4;
-    // padding =  4 - (bi.biWidth * sizeof(RGBTRIPLE) % 4);
-    // padding =  bi.biWidth * sizeof(RGBTRIPLE);
+    padding =  (4 - (OUTbi.biWidth * sizeof(RGBTRIPLE)) % 4) % 4;
 
     printf("OUTbi.biWidth  value for outfile is: %i\n", OUTbi.biWidth );
     printf("abs(OUTbi.biHeight) for outfile value is: %i\n", abs(OUTbi.biHeight));
@@ -109,30 +95,13 @@ int main(int argc, char *argv[])
     fwrite(&OUTbi, sizeof(BITMAPINFOHEADER), 1, outptr);    // this should be 40
 
     // edit here to account for outfile's BITMAPINFOHEADERs resize
-    OUTbi.biSizeImage = ((sizeof(RGBTRIPLE) * OUTbi.biWidth) + padding) * abs(inbiHeight * n);
-    // printf("RGBTRIPLE size is: %lu\n", sizeof(RGBTRIPLE));
-    printf("bi.biSizeImage value is: %i\n", OUTbi.biSizeImage);
-    printf("int bf.bfSize SECOND %d\n", OUTbf.bfSize);
+    OUTbi.biSizeImage = ((sizeof(RGBTRIPLE) * OUTbi.biWidth) + padding) * abs(OUTbi.biHeight);
+    printf("OUTbi.biSizeImage value is: %i\n", OUTbi.biSizeImage);
 
-    OUTbf.bfSize = bi.biSizeImage + sizeof(BITMAPFILEHEADER) + sizeof(BITMAPFILEHEADER);
+    OUTbf.bfSize = OUTbi.biSizeImage + sizeof(BITMAPFILEHEADER) + sizeof(BITMAPFILEHEADER);
     printf("int bf.bfSize FIRST %d\n", OUTbf.bfSize);
     // printf("infile padding %d\n", inpad);
     printf("outfile padding %d\n", padding);
-
-
-    // save each row to an array and then repeat the array n times ????
-
-    // int nrows = n;
-    // int ncolumns = n;
-    // int newbi = 0;
-    // RGBTRIPLE array[bi.biWidth];
-
-    // int **array = malloc(nrows * sizeof(int *));
-    // remember to clear the malloc before finishing !!!!!!!!!!!!!!!
-
-
-    // int outbiWidth = bi.biWidth;
-    // printf("outbiWidth is %i\n", outbiWidth);
 
     // iterate over infile's scanlines
     // *** for each row ***
@@ -150,35 +119,13 @@ int main(int argc, char *argv[])
 
                     // read RGB triple from infile
                     fread(&triple, sizeof(RGBTRIPLE), 1, inptr);
-                    // printf("RGBTRIPLE triple is %lu\n", sizeof(RGBTRIPLE));
-                    // printf("newbi.biWidth is: %i\n", newbi);
 
-                        // *** write RGB triple to array if you can ... ***
+                        // *** write rows ***
                         for (int horizontal = 0; horizontal < n; horizontal++)
                         {
-                            // fwrite(&triple, sizeof(RGBTRIPLE), 1, **row_arr);
-                            // scanline [l] = triple;
                             fwrite(&triple, sizeof(RGBTRIPLE), 1, outptr);
-
-                            // write to the array row_arr[r]
-                            // printf("j, meaning pixel, is %i\n", j);
-
                         }
 
-
-    //              *** for n number of times ***
-    //                  *** write array to outfile ***
-    //                  *** write outfile padding ***
-
-
-                //     for(int m = 0; m < nrows; m++)
-                //     {
-    		          //// write the pizels to the array
-    		          //array[m] = malloc(ncolumns * sizeof(int));
-    		          //printf("m loop values: %i\n", m);
-                //     }
-
-                // printf("i, showing rows is %i\n", i);
 
     //          *** skip over infile padding ***
                 // skip over padding, if any

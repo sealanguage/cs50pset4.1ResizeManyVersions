@@ -9,7 +9,7 @@ int main(int argc, char *argv[])
     // ensure proper usage
     if (argc != 4)
     {
-        fprintf(stderr, "Usage: resize infile outfile\n");
+        fprintf(stderr, "Usage: resize n infile outfile\n");
         return 1;
     }
 
@@ -25,7 +25,7 @@ int main(int argc, char *argv[])
     char *outfile = argv[3];
 
     // setup variables for padding of the infile and padding of the outfile
-    int inpad = 0;
+    int inpad;
     int padding = 0;
 
 
@@ -66,11 +66,7 @@ int main(int argc, char *argv[])
     printf("infile padding inpad is  %d\n", inpad);
 
 
-    // padding =  (4 - (bi.biWidth * sizeof(RGBTRIPLE)) % 4) % 4;
-    //  padding =  4 - (bi.biWidth * sizeof(RGBTRIPLE)) % 4;
-    //  padding =  (4 - (bi.biWidth * sizeof(RGBTRIPLE)) % 4) % 4;
-    // padding =  4 - (bi.biWidth * sizeof(RGBTRIPLE) % 4);
-    // padding =  bi.biWidth * sizeof(RGBTRIPLE);
+
     int inbiWidth = bi.biWidth;
 
     printf("inbiWidth used for infile padding %i\n", inbiWidth);
@@ -86,16 +82,25 @@ int main(int argc, char *argv[])
         return 4;
     }
 
-    // print width and height of the OUTFILE
-    bi.biWidth *= n;
-    bi.biHeight *= n;
-    printf("bi.biWidth value for outfile is: %i\n", bi.biWidth);
-    printf("abs(bi.biHeight) for outfile value is: %i\n", abs(bi.biHeight));
+
 
 
     // structs for new bitmapfileheader
     BITMAPFILEHEADER OUTbf = bf;
     BITMAPINFOHEADER OUTbi = bi;
+
+    // print width and height of the OUTFILE
+    OUTbi.biWidth *= n;
+    OUTbi.biHeight *= n;
+     padding =  (4 - (OUTbi.biWidth * sizeof(RGBTRIPLE)) % 4) % 4;
+    // padding =  4 - (bi.biWidth * sizeof(RGBTRIPLE)) % 4;
+    // padding =  (4 - (bi.biWidth * sizeof(RGBTRIPLE)) % 4) % 4;
+    // padding =  4 - (bi.biWidth * sizeof(RGBTRIPLE) % 4);
+    // padding =  bi.biWidth * sizeof(RGBTRIPLE);
+
+    printf("OUTbi.biWidth  value for outfile is: %i\n", OUTbi.biWidth );
+    printf("abs(OUTbi.biHeight) for outfile value is: %i\n", abs(OUTbi.biHeight));
+
 
     // write outfile's BITMAPFILEHEADER
     fwrite(&OUTbf, sizeof(BITMAPFILEHEADER), 1, outptr);   // this should be 14
@@ -104,15 +109,15 @@ int main(int argc, char *argv[])
     fwrite(&OUTbi, sizeof(BITMAPINFOHEADER), 1, outptr);    // this should be 40
 
     // edit here to account for outfile's BITMAPINFOHEADERs resize
-    OUTbf.bfSize = bi.biSizeImage = sizeof(BITMAPFILEHEADER) + sizeof(BITMAPFILEHEADER);
-    printf("int bf.bfSize FIRST %d\n", OUTbf.bfSize);
-    // printf("infile padding %d\n", inpad);
-    printf("outfile padding %d\n", padding);
-
-    OUTbi.biSizeImage = ((sizeof(RGBTRIPLE) * OUTbi.biWidth) + padding) * abs(OUTbi.biHeight);
+    OUTbi.biSizeImage = ((sizeof(RGBTRIPLE) * OUTbi.biWidth) + padding) * abs(inbiHeight * n);
     // printf("RGBTRIPLE size is: %lu\n", sizeof(RGBTRIPLE));
     printf("bi.biSizeImage value is: %i\n", OUTbi.biSizeImage);
     printf("int bf.bfSize SECOND %d\n", OUTbf.bfSize);
+
+    OUTbf.bfSize = bi.biSizeImage + sizeof(BITMAPFILEHEADER) + sizeof(BITMAPFILEHEADER);
+    printf("int bf.bfSize FIRST %d\n", OUTbf.bfSize);
+    // printf("infile padding %d\n", inpad);
+    printf("outfile padding %d\n", padding);
 
 
     // save each row to an array and then repeat the array n times ????
@@ -126,8 +131,8 @@ int main(int argc, char *argv[])
     // remember to clear the malloc before finishing !!!!!!!!!!!!!!!
 
 
-    int outbiWidth = bi.biWidth;
-    printf("outbiWidth is %i\n", outbiWidth);
+    // int outbiWidth = bi.biWidth;
+    // printf("outbiWidth is %i\n", outbiWidth);
 
     // iterate over infile's scanlines
     // *** for each row ***
@@ -149,7 +154,7 @@ int main(int argc, char *argv[])
                     // printf("newbi.biWidth is: %i\n", newbi);
 
                         // *** write RGB triple to array if you can ... ***
-                        for (int l = 0; l < n; l++)
+                        for (int horizontal = 0; horizontal < n; horizontal++)
                         {
                             // fwrite(&triple, sizeof(RGBTRIPLE), 1, **row_arr);
                             // scanline [l] = triple;
@@ -173,7 +178,7 @@ int main(int argc, char *argv[])
     		          //printf("m loop values: %i\n", m);
                 //     }
 
-                printf("i, showing rows is %i\n", i);
+                // printf("i, showing rows is %i\n", i);
 
     //          *** skip over infile padding ***
                 // skip over padding, if any
@@ -187,9 +192,9 @@ int main(int argc, char *argv[])
                     // printf("k is padding: %i\n", k);
                 }
 
-                if (vertical <= n - 1)
+                if (vertical < n - 1)
                 {
-                    fseek(inptr, - (bi.biWidth * 3 + inpad), SEEK_CUR );
+                    fseek(inptr, -(bi.biWidth * 3 + inpad), SEEK_CUR );
                 }
             }
 

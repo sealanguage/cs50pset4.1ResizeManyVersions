@@ -25,7 +25,7 @@ int main(int argc, char *argv[])
 
     // setup variables for padding of the infile and padding of the outfile
     int inpad = 0;
-    int padding = 0;
+    int outpadding = 0;
 
 
     // open input file
@@ -54,7 +54,7 @@ int main(int argc, char *argv[])
     // read infile's BITMAPINFOHEADER
     BITMAPINFOHEADER bi;
     fread(&bi, sizeof(BITMAPINFOHEADER), 1, inptr);
-    int inbiHeight = abs(bi.biHeight);
+                    // int inbiHeight = abs(bi.biHeight);
 
     // determine padding for scanlines
     inpad =  bi.biWidth * sizeof(RGBTRIPLE) % 4;  // make sure this refers to the old width
@@ -63,7 +63,7 @@ int main(int argc, char *argv[])
 
     int inbiWidth = bi.biWidth;
     printf("inbiWidth used for infile padding %i\n", inbiWidth);
-    printf("inbiHeight used for infile padding %i\n", inbiHeight);
+    // printf("inbiHeight used for infile padding %i\n", inbiHeight);
 
     // ensure infile is (likely) a 24-bit uncompressed BMP 4.0
     if (bf.bfType != 0x4d42 || bf.bfOffBits != 54 || bi.biSize != 40 ||
@@ -80,9 +80,14 @@ int main(int argc, char *argv[])
     BITMAPINFOHEADER OUTbi = bi;
 
     // print width and height of the OUTFILE
+    OUTbi.biWidth = abs(bi.biWidth);
     OUTbi.biWidth *= n;
+    // OUTbi.biHeight = abs(bi.biHeight);
     OUTbi.biHeight *= n;
-    padding =  (4 - (OUTbi.biWidth * sizeof(RGBTRIPLE)) % 4) % 4;
+    outpadding =  (4 - (OUTbi.biWidth * sizeof(RGBTRIPLE)) % 4) % 4;
+
+    // int hcounter = 0;
+    // int vcounter = 0;
 
     printf("OUTbi.biWidth  value for outfile is: %i\n", OUTbi.biWidth );
     printf("abs(OUTbi.biHeight) for outfile value is: %i\n", abs(OUTbi.biHeight));
@@ -95,21 +100,24 @@ int main(int argc, char *argv[])
     fwrite(&OUTbi, sizeof(BITMAPINFOHEADER), 1, outptr);    // this should be 40
 
     // edit here to account for outfile's BITMAPINFOHEADERs resize
-    OUTbi.biSizeImage = ((sizeof(RGBTRIPLE) * OUTbi.biWidth) + padding) * abs(OUTbi.biHeight);
+    OUTbi.biSizeImage = ((sizeof(RGBTRIPLE) * OUTbi.biWidth) + outpadding) * abs(OUTbi.biHeight);
     printf("OUTbi.biSizeImage value is: %i\n", OUTbi.biSizeImage);
 
-    OUTbf.bfSize = OUTbi.biSizeImage + sizeof(BITMAPFILEHEADER) + sizeof(BITMAPFILEHEADER);
+    OUTbf.bfSize = OUTbi.biSizeImage + sizeof(BITMAPFILEHEADER) + sizeof(BITMAPINFOHEADER);
     printf("int bf.bfSize FIRST %d\n", OUTbf.bfSize);
     // printf("infile padding %d\n", inpad);
-    printf("outfile padding %d\n", padding);
+    printf("outfile padding %d\n", outpadding);
+
 
     // iterate over infile's scanlines
-    // *** for each row ***
-        for (int i = 0, biHeight = abs(bi.biHeight); i < abs(biHeight); i++)
+    // *** read the number of rows from the infile ***
+        for (int i = 0, biHeight = abs(bi.biHeight); i < biHeight; i++)
+        printf("biHeight used in loop is %i\n", biHeight);
         {
-
             for (int vertical = 0; vertical < n; vertical++)
+            // try using repeat here because it repeats the vertical lines by n
             {
+                printf("1 vertical value on n %i\n", vertical);
                 // iterate over pixels in scanline
                 // *** for each pixel ***
                 for (int j = 0; j < inbiWidth; j++)
@@ -120,19 +128,20 @@ int main(int argc, char *argv[])
                     // read RGB triple from infile
                     fread(&triple, sizeof(RGBTRIPLE), 1, inptr);
 
-                        // *** write rows ***
-                        for (int horizontal = 0; horizontal < n; horizontal++)
+                        // *** write pixels ***
+                        for (int pixel = 0; pixel < n; pixel++)  // inbiWidth
                         {
                             fwrite(&triple, sizeof(RGBTRIPLE), 1, outptr);
+                            // needs to increment the pixels n times
                         }
 
 
     //          *** skip over infile padding ***
                 // skip over padding, if any
-                fseek(inptr, padding, SEEK_CUR);
+                fseek(inptr, inpad, SEEK_CUR);
 
                 // then add it back (to demonstrate how)
-                for (int k = 0; k < padding; k++)
+                for (int k = 0; k < outpadding; k++)
                 {
                     //adding padding back into the image
                     fputc(0x00, outptr);
@@ -142,6 +151,8 @@ int main(int argc, char *argv[])
                 if (vertical < n - 1)
                 {
                     fseek(inptr, -(bi.biWidth * 3 + inpad), SEEK_CUR );
+                    // fseek(inptr, -(bi.biWidth * 3 + padding), SEEK_CUR );
+                    printf("2 vertical value on n %i\n", vertical);
                 }
             }
 

@@ -1,4 +1,3 @@
-
 #include <stdio.h>
 #include <stdlib.h>
 #include "bmp.h"
@@ -54,10 +53,10 @@ int main(int argc, char *argv[])
     // read infile's BITMAPINFOHEADER
     BITMAPINFOHEADER bi;
     fread(&bi, sizeof(BITMAPINFOHEADER), 1, inptr);
-                    // int inbiHeight = abs(bi.biHeight);
 
     // determine padding for scanlines
-    inpad =  bi.biWidth * sizeof(RGBTRIPLE) % 4;  // make sure this refers to the old width
+    inpad =  (4 -(bi.biWidth * sizeof(RGBTRIPLE)) % 4) % 4;  // make sure this refers to the old width
+    // inpad =  bi.biWidth * sizeof(RGBTRIPLE) % 4;  // make sure this refers to the old width
     printf("infile padding inpad is  %d\n", inpad);
 
 
@@ -79,14 +78,15 @@ int main(int argc, char *argv[])
     BITMAPFILEHEADER OUTbf = bf;
     BITMAPINFOHEADER OUTbi = bi;
 
+
     // print width and height of the OUTFILE
     OUTbi.biWidth = abs(bi.biWidth);
     OUTbi.biWidth *= n;
-    // OUTbi.biHeight = abs(bi.biHeight);
+    OUTbi.biHeight = abs(bi.biHeight);
     OUTbi.biHeight *= n;
     outpadding =  (4 - (OUTbi.biWidth * sizeof(RGBTRIPLE)) % 4) % 4;
 
-    // int hcounter = 0;
+          int pixcounter = 0;
     // int vcounter = 0;
 
     printf("OUTbi.biWidth  value for outfile is: %i\n", OUTbi.biWidth );
@@ -103,61 +103,133 @@ int main(int argc, char *argv[])
     OUTbi.biSizeImage = ((sizeof(RGBTRIPLE) * OUTbi.biWidth) + outpadding) * abs(OUTbi.biHeight);
     printf("OUTbi.biSizeImage value is: %i\n", OUTbi.biSizeImage);
 
-    OUTbf.bfSize = OUTbi.biSizeImage + sizeof(BITMAPFILEHEADER) + sizeof(BITMAPINFOHEADER);
+
+    OUTbf.bfSize = OUTbi.biSizeImage + sizeof(OUTbf) + sizeof(OUTbi);
+    // OUTbf.bfSize = OUTbi.biSizeImage + sizeof(BITMAPFILEHEADER) + sizeof(BITMAPINFOHEADER);
     printf("int bf.bfSize FIRST %d\n", OUTbf.bfSize);
     // printf("infile padding %d\n", inpad);
     printf("outfile padding %d\n", outpadding);
 
+// create struct pixel struct like in whodunit
 
-    // iterate over infile's scanlines
-    // *** read the number of rows from the infile ***
-        for (int i = 0, biHeight = abs(bi.biHeight); i < biHeight; i++)
-        printf("biHeight used in loop is %i\n", biHeight);
-        {
-            for (int vertical = 0; vertical < n; vertical++)
-            // try using repeat here because it repeats the vertical lines by n
+
+
+//   this is the original loop structure for duplicating the pixels
+// iterate over infile's scanlines
+    for (int i = 0, biHeight = abs(bi.biHeight); i < biHeight; i++)
+    {
+        for (int vertical = 0; vertical < n; vertical++)
             {
-                printf("1 vertical value on n %i\n", vertical);
-                // iterate over pixels in scanline
-                // *** for each pixel ***
-                for (int j = 0; j < inbiWidth; j++)
-                {
-                    // temporary storage
-                    RGBTRIPLE triple;
 
-                    // read RGB triple from infile
-                    fread(&triple, sizeof(RGBTRIPLE), 1, inptr);
+            // iterate over pixels in scanline
+            for (int j = 0; j < bi.biWidth; j++)
+            {
+                // temporary storage
+                RGBTRIPLE triple;
 
-                        // *** write pixels ***
+                // read RGB triple from infile
+                fread(&triple, sizeof(RGBTRIPLE), 1, inptr);
+
+                 // for each pixel, write the pixel n number of times to the array
+
+
+                        // if (triple.rgbtRed == 0xff && triple.rgbtBlue == 0xff && triple.rgbtGreen == 0xff)
+                        // {
+                        //     triple.rgbtRed = 0x00;
+                        //     triple.rgbtGreen = 0x00;
+                        //     triple.rgbtBlue = 0x00;
+                        // }
+
+
+
                         for (int pixel = 0; pixel < n; pixel++)  // inbiWidth
-                        {
-                            fwrite(&triple, sizeof(RGBTRIPLE), 1, outptr);
-                            // needs to increment the pixels n times
-                        }
+                            {
+                                fwrite(&triple, sizeof(RGBTRIPLE), 1, outptr);
+                                pixcounter++;
+                                // needs to increment the pixels n times
+                            }
 
 
-    //          *** skip over infile padding ***
-                // skip over padding, if any
-                fseek(inptr, inpad, SEEK_CUR);
+                // write RGB triple to outfile
+                // fwrite(&triple, sizeof(RGBTRIPLE), 1, outptr);
 
-                // then add it back (to demonstrate how)
-                for (int k = 0; k < outpadding; k++)
-                {
-                    //adding padding back into the image
-                    fputc(0x00, outptr);
-                    // printf("k is padding: %i\n", k);
-                }
-
-                if (vertical < n - 1)
-                {
-                    fseek(inptr, -(bi.biWidth * 3 + inpad), SEEK_CUR );
-                    // fseek(inptr, -(bi.biWidth * 3 + padding), SEEK_CUR );
-                    printf("2 vertical value on n %i\n", vertical);
-                }
             }
+
+            // skip over padding, if any
+            fseek(inptr, inpad, SEEK_CUR);
+
+
+
+            // then add it back (to demonstrate how)
+            for (int k = 0; k < outpadding; k++)
+            {
+                //adding padding back into the image
+                fputc(0x00, outptr);
+                // printf("k: %i\n", k);
+            }
+            if (vertical < n - 1)
+                {
+                    fseek(inptr, - (bi.biWidth * 3 + inpad), SEEK_CUR );
+                }
+
 
         }
     }
+
+
+
+// below is the looping structure that isn't working from work done in class
+
+    // // iterate over infile's scanlines
+    // // *** read the number of rows from the infile ***
+    //     for (int i = 0, biHeight = abs(bi.biHeight); i < biHeight; i++)
+
+    //     {
+    //         for (int vertical = 0; vertical < n; vertical++)
+    //         // try using repeat here because it repeats the vertical lines by n
+    //         {
+    //             printf("1 vertical value on n %i\n", vertical);
+    //             // iterate over pixels in scanline
+    //             // *** for each pixel ***
+    //             for (int j = 0; j < inbiWidth; j++)
+    //             {
+    //                 // temporary storage
+    //                 RGBTRIPLE triple;
+
+    //                 // read RGB triple from infile
+    //                 fread(&triple, sizeof(RGBTRIPLE), 1, inptr);
+
+    //                     // *** write pixels ***
+    //                     for (int pixel = 0; pixel < n; pixel++)  // inbiWidth
+    //                     {
+    //                         fwrite(&triple, sizeof(RGBTRIPLE), 1, outptr);
+    //                         pixcounter++;
+    //                         // needs to increment the pixels n times
+    //                     }
+
+
+    // //          *** skip over infile padding ***
+    //             // skip over padding, if any
+    //             fseek(inptr, inpad, SEEK_CUR);
+
+    //             // then add it back (to demonstrate how)
+    //             for (int k = 0; k < outpadding; k++)
+    //             {
+    //                 //adding padding back into the image
+    //                 fputc(0x00, outptr);
+    //                 // printf("k is padding: %i\n", k);
+    //             }
+
+    //             if (vertical < n - 1)
+    //             {
+    //                 fseek(inptr, -(bi.biWidth * 3 + inpad), SEEK_CUR );
+    //                 // fseek(inptr, -(bi.biWidth * 3 + padding), SEEK_CUR );
+    //                 printf("2 vertical value on n %i\n", vertical);
+    //             }
+    //         }
+    //     printf("biHeight used in loop is %i\n", biHeight);
+    //     }
+    // }
 
     // close infile
     fclose(inptr);
